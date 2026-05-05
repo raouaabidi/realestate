@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: realestate_web
+    ports:
+      - "8080:80"
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: realestate
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - realestate_network
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: realestate_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: realestate
+      MYSQL_ROOT_HOST: '%'
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./DATABASE\ FILE/realestatephp.sql:/docker-entrypoint-initdb.d/realestatephp.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - realestate_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      timeout: 20s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: realestate_phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - realestate_network
+    restart: unless-stopped
+
+volumes:
+  db_data:
+
+networks:
+  realestate_network:
+    driver: bridge
